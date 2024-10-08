@@ -217,5 +217,5 @@ module_init(mydriver_init);
 module_exit(mydriver_exit);
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Immads Mir");
+MODULE_AUTHOR("Immad Mir");
 MODULE_DESCRIPTION("A dynamic circular queue with ioctl calls");
