@@ -9,9 +9,9 @@ int main() {
 
     memcpy(d->data, "xyz", 3);
 
-    int fd = open("/dev/immad", O_RDWR);
+    int fd = open(DEVICE_PATH, O_RDWR);
     if(fd < 0) {
-        printf("Couldn't open device file");
+        printf("Couldn't open device file\n");
         return -1;
     }
 

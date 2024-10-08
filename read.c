@@ -8,7 +8,7 @@ int main() {
     d->data = malloc(d->length);
 
 
-    int fd = open("/dev/immad", O_RDWR);
+    int fd = open(DEVICE_PATH, O_RDWR);
     if(fd < 0) {
         printf("Couldn't open device file");
         return -1;

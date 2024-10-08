@@ -1,4 +1,4 @@
-obj-m += immad.o
+obj-m += mydriver.o
 
 PWD := $(CURDIR)
 

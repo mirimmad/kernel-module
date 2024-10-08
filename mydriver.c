@@ -10,7 +10,7 @@
 #include <linux/ioctl.h>
 
 #include "common.h"
-#define DEVICE_NAME "immad"
+#define DEVICE_NAME "mydriver"
 #define MAX_Q_SIZE 1024
 #define SET_SIZE_OF_QUEUE _IOW(MAJOR_NUM, 1, int * ) 
 #define PUSH_DATA _IOW(MAJOR_NUM, 2, struct data * ) 
@@ -30,7 +30,7 @@ static DECLARE_WAIT_QUEUE_HEAD(my_queue);
 
 static void init_queue(int size)
 {
-    pr_info("Immad: init queue");
+    pr_info("mydriver: init queue");
 
     // If a queue was already allocated, free it.
     if(circ_queue.queue)
@@ -40,7 +40,7 @@ static void init_queue(int size)
             kfree(circ_queue.queue[i]);
         }
         kfree(circ_queue.queue);
-        pr_info("Immad: Freed previously allocated queue");
+        pr_info("mydriver: Freed previously allocated queue");
     }
 
     circ_queue.queue = kmalloc_array(size, sizeof(struct data), GFP_KERNEL);
@@ -48,28 +48,28 @@ static void init_queue(int size)
     circ_queue.head = 0;
     circ_queue.tail = 0;
     circ_queue.count = 0;
-    pr_info("Immad: allocated queue of size %d", size);
+    pr_info("mydriver: allocated queue of size %d", size);
 }
 
 static int enqueue(struct data * new_data)
 {
-    pr_info("Immad: enqueue");
+    pr_info("mydriver: enqueue");
     if (circ_queue.count >= circ_queue.size) {
-        pr_info("Immad: queue overflow");
+        pr_info("mydriver: queue overflow");
         return -1;
     }
 
     circ_queue.queue[circ_queue.tail] = new_data;
     circ_queue.tail = (circ_queue.tail + 1) % circ_queue.size;
     circ_queue.count++;
-    pr_info("Immad: enqueue: Pushed data");
+    pr_info("mydriver: enqueue: Pushed data");
     return 0;
 }
 
 static int dequeue(struct data ** out)
 {
     if (circ_queue.count <= 0) {
-        pr_info("Immad: Empty Queue");
+        pr_info("mydriver: Empty Queue");
         return -1;
     }
 
@@ -81,19 +81,19 @@ static int dequeue(struct data ** out)
 
 static int device_open (struct inode *inode, struct file * fp) 
 {
-    pr_info("Immad: Device opened");
+    pr_info("mydriver: Device opened");
     return 0;
 }
 
 static int device_release (struct inode * inode, struct file * fp) 
 {
-    pr_info("Immad: Device closed");
+    pr_info("mydriver: Device closed");
     return 0;
 }
 
 static long device_ioctl (struct file * fp, unsigned int ioctl_num, unsigned long ioctl_param)
 {    
-    pr_info("Immad: inside ioctl handler");
+    pr_info("mydriver: inside ioctl handler");
     int size;
     struct data *user_data;
     struct data *queue_data;
@@ -101,9 +101,9 @@ static long device_ioctl (struct file * fp, unsigned int ioctl_num, unsigned lon
     switch (ioctl_num) {
         case SET_SIZE_OF_QUEUE: {
             get_user(size, (int __user *)ioctl_param);
-            pr_info("Immad: SET_SIZE_OF_QUEUE: %d", size);
+            pr_info("mydriver: SET_SIZE_OF_QUEUE: %d", size);
             if (size > MAX_Q_SIZE || size <= 0) {
-                pr_info("Immad: Invalid Queue size");
+                pr_info("mydriver: Invalid Queue size");
                 return -EINVAL;
             }
             init_queue(size);
@@ -111,7 +111,7 @@ static long device_ioctl (struct file * fp, unsigned int ioctl_num, unsigned lon
         }
 
         case PUSH_DATA: {
-            pr_info("Immad: PUSH_DATA");
+            pr_info("mydriver: PUSH_DATA");
             user_data = kmalloc(sizeof(struct data), GFP_KERNEL);
             //copy all of user's "data"
             copy_from_user(user_data, (struct data __user *)ioctl_param, sizeof(struct data));
@@ -121,27 +121,27 @@ static long device_ioctl (struct file * fp, unsigned int ioctl_num, unsigned lon
             user_data->data = kmalloc(user_data->length, GFP_KERNEL);
             //copy into it
             copy_from_user(user_data->data, data_addr, user_data->length);
-            pr_info("Immad: PUSH_DATA: %d", user_data->length);
+            pr_info("mydriver: PUSH_DATA: %d", user_data->length);
 
             if(enqueue(user_data) == -1) {
-                pr_info("Immad: PUSH failed");
+                pr_info("mydriver: PUSH failed");
                 return -EFAULT;
             }
 
-            pr_info("Immad: PUSH successfull");
+            pr_info("mydriver: PUSH successfull");
             wake_up_interruptible(&my_queue);
             break;
         }
 
         case POP_DATA: {
-            pr_info("Immad: POP_DATA");
+            pr_info("mydriver: POP_DATA");
 
             if (circ_queue.count <= 0) {
                 wait_event_interruptible(my_queue, circ_queue.count > 0);
             }
 
             if(dequeue(&queue_data) == -1) {
-                pr_info("Immad: POP_DATA failed");
+                pr_info("mydriver: POP_DATA failed");
                 return -EFAULT;
             }
 
@@ -150,13 +150,13 @@ static long device_ioctl (struct file * fp, unsigned int ioctl_num, unsigned lon
             copy_from_user(u_data, (struct data __user *)ioctl_param, sizeof(struct data));
             
             if (u_data->length != queue_data->length) {
-                pr_info("Immad: POP: Invalid length, expected %d, got %d", queue_data->length, u_data->length);
+                pr_info("mydriver: POP: Invalid length, expected %d, got %d", queue_data->length, u_data->length);
                 return -EFAULT;
             }
 
             //copy data to user
             copy_to_user(u_data->data, queue_data->data, queue_data->length);
-            pr_info("Immad: POP successfull");
+            pr_info("mydriver: POP successfull");
             kfree(queue_data->data);
             kfree(queue_data);
             kfree(u_data);
@@ -164,7 +164,7 @@ static long device_ioctl (struct file * fp, unsigned int ioctl_num, unsigned lon
         }
 
         default: {
-            pr_info("Immad: hit default");
+            pr_info("mydriver: hit default");
             return -EINVAL;
         }
 
@@ -183,11 +183,11 @@ static struct file_operations fops = {
 };
 static struct class *cls;
 
-static int __init immad_init(void)
+static int __init mydriver_init(void)
 {   
     int major = register_chrdev(MAJOR_NUM, DEVICE_NAME, &fops);
     if (major < 0) {
-        pr_info("Immad: couldn't register chrdev %d", major);
+        pr_info("mydriver: couldn't register chrdev %d", major);
         return major;
     }
 
@@ -203,7 +203,7 @@ static int __init immad_init(void)
     return 0;
 }
 
-static void __exit immad_exit(void)
+static void __exit mydriver_exit(void)
 {
 
     device_destroy(cls, MKDEV(MAJOR_NUM, 0));
@@ -213,9 +213,9 @@ static void __exit immad_exit(void)
 
 }
 
-module_init(immad_init);
-module_exit(immad_exit);
+module_init(mydriver_init);
+module_exit(mydriver_exit);
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Immad Mir");
+MODULE_AUTHOR("Immads Mir");
 MODULE_DESCRIPTION("A dynamic circular queue with ioctl calls");

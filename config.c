@@ -3,12 +3,12 @@
 
 int main()
 {
-    int fd = open("/dev/immad", O_RDWR);
+    int fd = open(DEVICE_PATH, O_RDWR);
     if(fd < 0) {
-        printf("Couldn't open device file");
+        printf("Couldn't open device file\n");
         return -1;
     }
-    int size = 3;
+    int size = 100;
 
     int ret = ioctl(fd, SET_SIZE_OF_QUEUE, &size);
     if(ret < 0) {
