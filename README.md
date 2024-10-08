@@ -3,7 +3,7 @@
 ### Building
 `$ make`
 
-to build the kernel module (immad.c)
+to build the kernel module (mydriver.c)
 
 `$ gcc config.c -o config`
 
